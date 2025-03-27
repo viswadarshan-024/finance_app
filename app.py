@@ -2,6 +2,7 @@ import os
 import yfinance as yf
 import streamlit as st
 from typing import List, Optional, Dict, Any
+from pydantic import BaseModel
 
 from langchain_groq import ChatGroq
 from langchain_core.tools import BaseTool, Tool
@@ -13,11 +14,13 @@ from langchain.memory import ConversationBufferMemory
 
 class WebSearchTool(BaseTool):
     """Custom web search tool using DuckDuckGo Search API Wrapper"""
-    name = "web_search_tool"
-    description = "Performs web searches to gather current information"
+    config: WebSearchToolConfig
+    # name = "web_search_tool"
+    # description = "Performs web searches to gather current information"
 
     def __init__(self):
         super().__init__()
+        self.config = WebSearchToolConfig(name="web_search_tool", description="Performs web searches to gather current information")
         self.search = DuckDuckGoSearchAPIWrapper(max_results=5)
 
     def _run(self, query: str) -> str:
