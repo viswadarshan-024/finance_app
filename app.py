@@ -1,11 +1,11 @@
 import os
+import yfinance as yf
 import streamlit as st
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 from langchain_groq import ChatGroq
 from langchain_core.tools import BaseTool, Tool
 from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
-from langchain_community.utilities import YFinanceAPIWrapper
 from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import SystemMessage
@@ -31,31 +31,32 @@ class WebSearchTool(BaseTool):
         return self._run(query)
 
 class FinancialAnalysisTool(BaseTool):
-    """Comprehensive financial analysis tool"""
+    """Comprehensive financial analysis tool using yfinance"""
     name = "financial_analysis_tool"
     description = "Provides in-depth financial analysis for stocks and companies"
 
-    def __init__(self):
-        super().__init__()
-        self.yf = YFinanceAPIWrapper()
-
     def _run(self, ticker: str) -> str:
         try:
-            # Comprehensive financial data gathering
-            stock_info = self.yf.get_company_overview(ticker)
-            stock_price = self.yf.get_price(ticker)
+            # Fetch stock information using yfinance
+            stock = yf.Ticker(ticker)
             
+            # Retrieve key financial information
+            info = stock.info
             financial_summary = f"""
 📊 Financial Analysis for {ticker}:
 -----------------------------
-🔹 Company Name: {stock_info.get('longName', 'N/A')}
-🔹 Current Price: ${stock_price:.2f}
-🔹 Sector: {stock_info.get('sector', 'N/A')}
-🔹 Market Cap: ${stock_info.get('marketCap', 'N/A'):,}
-🔹 P/E Ratio: {stock_info.get('trailingPE', 'N/A')}
-🔹 Dividend Yield: {stock_info.get('dividendYield', 'N/A') * 100:.2f}%
-🔹 52-Week High: ${stock_info.get('fiftyTwoWeekHigh', 'N/A'):.2f}
-🔹 52-Week Low: ${stock_info.get('fiftyTwoWeekLow', 'N/A'):.2f}
+🔹 Company Name: {info.get('longName', 'N/A')}
+🔹 Current Price: ${info.get('currentPrice', 'N/A'):.2f}
+🔹 Sector: {info.get('sector', 'N/A')}
+🔹 Market Cap: ${info.get('marketCap', 'N/A'):,}
+🔹 P/E Ratio: {info.get('trailingPE', 'N/A')}
+🔹 Dividend Yield: {info.get('dividendYield', 'N/A') * 100:.2f}%
+🔹 52-Week High: ${info.get('fiftyTwoWeekHigh', 'N/A'):.2f}
+🔹 52-Week Low: ${info.get('fiftyTwoWeekLow', 'N/A'):.2f}
+
+📈 Recent Financial Highlights:
+- Recommendation: {stock.recommendations.mean() if hasattr(stock, 'recommendations') else 'N/A'}
+- Target Price: ${stock.info.get('targetMeanPrice', 'N/A'):.2f}
 """
             return financial_summary
         except Exception as e:
